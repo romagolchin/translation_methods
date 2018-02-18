@@ -7,9 +7,21 @@ import java.util.Set;
  */
 public class ParserRule {
 
+    private String lhs;
+
+    private List<Alternative> alternatives;
+
+    Set<String> params;
+
+    Set<String> returnValues;
+
     public ParserRule(String lhs, List<Alternative> alternatives) {
         this.lhs = lhs;
         this.alternatives = alternatives;
+    }
+
+    public String getLhs() {
+        return lhs;
     }
 
     public void setParams(Set<String> params) {
@@ -20,19 +32,23 @@ public class ParserRule {
         this.returnValues = returnValues;
     }
 
-    private String lhs;
-
-    private List<Alternative> alternatives;
-
-    Set<String> params;
-
-    Set<String> returnValues;
+    public List<Alternative> getAlternatives() {
+        return alternatives;
+    }
 
     static class Alternative {
         public Alternative(List<Application> rhs, Map<String, Integer> labels, String code) {
             this.rhs = rhs;
             this.labels = labels;
             this.code = code;
+        }
+
+        public List<Application> getRhs() {
+            return rhs;
+        }
+
+        public String getCode() {
+            return code;
         }
 
         private List<Application> rhs;
@@ -52,14 +68,18 @@ public class ParserRule {
 
     // element applied to args
     static class Application {
-        public Application(int tokenId, String elem, String args) {
+        public Application(int tokenId, String elem, String args, String label) {
             this.tokenId = tokenId;
             this.elem = elem;
             this.args = args;
+            this.label = label;
         }
         int tokenId;
         String elem;
         String args;
+        String label;
+
+        public boolean isToken() { return  tokenId != Util.Constants.NONE;}
 
         @Override
         public String toString() {

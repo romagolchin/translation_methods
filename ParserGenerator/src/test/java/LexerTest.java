@@ -11,36 +11,36 @@ import static org.junit.Assert.*;
 /**
  * @author Roman Golchin (romagolchin@gmail.com)
  */
-public class GrammarArithmLexerTest {
-    public GrammarArithmLexerTest() throws IOException {
-        lexer = new GrammarArithmLexer(Paths.get("arithm"));
+public class LexerTest {
+    public LexerTest() throws IOException {
+        lexer = new Lexer(Paths.get("arithm"));
     }
 
-    private GrammarArithmLexer lexer;
+    private Lexer lexer;
 
     @Test
     public void test() throws Exception {
-//        int tokenId = 0;
-//        while ((tokenId = lexer.next()) != -1) {
-//            System.out.println(tokenId);
-//        }
-        Matcher matcher = Pattern.compile("(\\d)|(\\+)").matcher("1+2");
-        matcher.find();
-        System.out.println(matcher.group());
-        System.out.println(matcher.group(1));
-        System.out.println(matcher.group(2));
-        matcher.find();
-        System.out.println(matcher.group());
-        System.out.println(matcher.group(1));
-        System.out.println(matcher.group(2));
-        matcher.find();
-        System.out.println(matcher.group());
-        System.out.println(matcher.group(1));
-        System.out.println(matcher.group(2));
-        matcher.find();
-        System.out.println(matcher.group());
-        System.out.println(matcher.group(1));
-        System.out.println(matcher.group(2));
-        System.out.println(Arrays.asList("1+2".split("\\+")));
+        int tokenId = 0;
+        while ((tokenId = lexer.next()) != -1) {
+            System.out.println(tokenId);
+        }
+//        Matcher matcher = Pattern.compile("(\\d)|(\\+)").matcher("1+2");
+//        matcher.find();
+//        System.out.println(matcher.group());
+//        System.out.println(matcher.group(1));
+//        System.out.println(matcher.group(2));
+//        matcher.find();
+//        System.out.println(matcher.group());
+//        System.out.println(matcher.group(1));
+//        System.out.println(matcher.group(2));
+//        matcher.find();
+//        System.out.println(matcher.group());
+//        System.out.println(matcher.group(1));
+//        System.out.println(matcher.group(2));
+//        matcher.find();
+//        System.out.println(matcher.group());
+//        System.out.println(matcher.group(1));
+//        System.out.println(matcher.group(2));
+//        System.out.println(Arrays.asList("1+2".split("\\+")));
     }
 }
