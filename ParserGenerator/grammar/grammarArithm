@@ -1,25 +1,24 @@
-
 skip WS : '[ \t\n]+';
 
 e returns [ int v] :t e1 [$t.v] {$v = $e1.v;
- System.out.println("e.v = " + $e.v);
+ System.out.println("e.v = " + $v);
  };
-e1[int inh] returns [int v] : { $v = $e1.inh; }
-    | '\+' t x=e1[$e1.inh + $t.v] { $v = $x.v; }
+e1[int inh] returns [int v] : { $v = $inh; }
+    | '\+' t x=e1[$inh + $t.v] { $v = $x.v; }
     ;
 t returns [int v]:
     n t1[$n.v] { $v = $t1.v; } ;
-t1[int inh] returns [int v] : { $v = $t1.inh; }
-    | '\*' n x=t1[$t1.inh * $n.v] { $v = $x.v; }
+t1[int inh] returns [int v] : { $v = $inh; }
+    | '\*' n x=t1[$inh * $n.v] { $v = $x.v; }
     ;
 n returns [int v]: '-' x=n { $v = - $x.v; }
 | f  { $v = $f.v; };
 f returns [int v] : p f1[$p.v] {$v = $f1.v; } ;
 f1[int inh] returns [int v]: '\^' f {
-    $v = (int) Math.pow((double) $f1.inh, (double) $f.v);
+    $v = (int) Math.pow((double) $inh, (double) $f.v);
 }
     | {
-        $v = $f1.inh;
+        $v = $inh;
     };
 p returns [int v] : '\(' e '\)' {
 $v = $e.v; }

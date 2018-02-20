@@ -21,7 +21,7 @@ public class GrammarListenerImpl extends GrammarBaseListener {
     // (Implicit tokens don't have names => cannot be stored in tokenNameToId)
     private final Map<String, Integer> implicitTokens = new HashMap<>();
 
-
+    private final Set<String> ruleNames = new HashSet<>();
 
     public Grammar getGrammar() {
         return grammar;
@@ -41,6 +41,19 @@ public class GrammarListenerImpl extends GrammarBaseListener {
     @Override
     public void exitFile(GrammarParser.FileContext ctx) {
         super.exitFile(ctx);
+        // check if all elements are declared
+        for (int i = 0; i < parserRules.size(); i++) {
+            ParserRule parserRule = parserRules.get(i);
+            for (ParserRule.Alternative alternative : parserRule.getAlternatives()) {
+                int finalI = i;
+                alternative.getRhs().stream().map(application -> application.elem).forEach(element -> {
+                    if (element != null && !ruleNames.contains(element))
+                        throw new RuntimeException("undeclared non-terminal " + element + " is used in alternative "
+                                + (finalI + 1) + " of rule " + parserRule.getLhs());
+                });
+            }
+        }
+
         grammar = new Grammar(parserRules, lexerRules);
         System.out.println("lexer rules " + lexerRules);
         System.out.println("parser rules " + parserRules);
@@ -50,7 +63,10 @@ public class GrammarListenerImpl extends GrammarBaseListener {
     @Override
     public void exitParser_rule(GrammarParser.Parser_ruleContext ctx) {
         super.exitParser_rule(ctx);
-        String left = ctx.LC_ID().getText();
+        String ruleName = ctx.LC_ID().getText();
+        if (ruleNames.contains(ruleName))
+            throw new RuntimeException("rule " + ruleName + " is declared multiple times");
+        ruleNames.add(ruleName);
         List<ParserRule.Alternative> alternatives = new ArrayList<>();
         for (int i = 0; i < ctx.alt().size(); i++) {
             GrammarParser.AltContext altContext = ctx.alt().get(i);
@@ -61,51 +77,54 @@ public class GrammarListenerImpl extends GrammarBaseListener {
                 TerminalNode string = elemContext.STRING();
                 List<TerminalNode> terminals = elemContext.UC_ID();
                 List<TerminalNode> nonTerminals = elemContext.LC_ID();
+                String indexedLabel = null;
+                ParserRule.Application application = null;
+                String label = null;
                 if (string != null) {
                     // implicit token
                     String text = string.getSymbol().getText();
-                    String label = terminals == null || terminals.isEmpty() ? null : terminals.get(0).getText();
+                    label = terminals == null || terminals.isEmpty() ? null : terminals.get(0).getText();
                     if (!implicitTokens.containsKey(text)) {
                         implicitTokens.put(text, lexerRules.size());
                         lexerRules.add(new LexerRule(text.substring(1, text.length() - 1), false));
                     }
-                    applications.add(new ParserRule.Application(implicitTokens.get(text), null, null, label));
-                } else {
-                    ParserRule.Application application = null;
-                    String label = null;
-                    if (nonTerminals != null && !nonTerminals.isEmpty()) {
-                        label = nonTerminals.get(0).getText();
-                        labels.putIfAbsent(label, applications.size());
-                        TerminalNode attrs = elemContext.ARGS();
-                        String args = attrs == null ? "[]" : attrs.getText();
-                        String indexedLabel = assignLabel(labelCount, label);
-                        application = new ParserRule.Application(Util.Constants.NONE,
-                                nonTerminals.get(nonTerminals.size() - 1).getText(),
-                                args.substring(1, args.length() - 1).trim(), indexedLabel);
-                    } else if (terminals != null && !terminals.isEmpty()) {
-                        // explicit token
-                        TerminalNode terminal = terminals.get(terminals.size() - 1);
-                        String text = terminal.getSymbol().getText();
-                        Integer tokenId = tokenNameToId.get(text);
-                        label = terminals.get(0).getText();
-                        labels.putIfAbsent(label, applications.size());
-                        String indexedLabel = assignLabel(labelCount, label);
-                        if (tokenId != null)
-                            application = new ParserRule.Application(tokenId, text, null, indexedLabel);
-                        else {
-                            Token symbol = terminal.getSymbol();
-                            throw new RuntimeException("undeclared token " + symbol.getText()
-                                    + " at " + symbol.getLine() + ":" + symbol.getCharPositionInLine());
-                        }
-                    }
-                    if (label != null && labelCount.get(label) > 1) {
-                        System.err.println("warning: label " + label + " is assigned to multiple elements " +
-                                "in alternative " + (i + 1) + " in rule " + left);
-                    }
-                    if (application != null) {
-                        applications.add(application);
+                    indexedLabel = label == null ? null : assignLabel(labelCount, label);
+                    application = new ParserRule.Application(implicitTokens.get(text), null, null, label);
+                } else if (nonTerminals != null && !nonTerminals.isEmpty()) {
+                    // non-terminal
+                    label = nonTerminals.get(0).getText();
+                    TerminalNode attrs = elemContext.ARGS();
+                    String args = attrs == null ? "[]" : attrs.getText();
+                    indexedLabel = assignLabel(labelCount, label);
+                    String elem = nonTerminals.get(nonTerminals.size() - 1).getText();
+                    application = new ParserRule.Application(Util.Constants.NONE,
+                            elem, args.substring(1, args.length() - 1).trim(), indexedLabel);
+                } else if (terminals != null && !terminals.isEmpty()) {
+                    // explicit token
+                    TerminalNode terminal = terminals.get(terminals.size() - 1);
+                    String text = terminal.getSymbol().getText();
+                    Integer tokenId = tokenNameToId.get(text);
+                    label = terminals.get(0).getText();
+                    indexedLabel = assignLabel(labelCount, label);
+                    if (tokenId != null)
+                        application = new ParserRule.Application(tokenId, text, null, indexedLabel);
+                    else {
+                        Token symbol = terminal.getSymbol();
+                        throw new RuntimeException("undeclared token " + symbol.getText()
+                                + " at " + symbol.getLine() + ":" + symbol.getCharPositionInLine());
                     }
                 }
+                if (label != null) {
+                    if (labelCount.get(label) > 1)
+                        System.err.println("warning: label " + label + " is assigned to multiple elements " +
+                                "in alternative " + (i + 1) + " in rule " + ruleName);
+                }
+                if (application != null) {
+                    applications.add(application);
+                }
+                int lastAdded = application != null ? 1 : 0;
+                if (indexedLabel != null)
+                    labels.putIfAbsent(indexedLabel, applications.size() - lastAdded);
             }
             TerminalNode codeNode = altContext.CODE();
             String code = "";
@@ -116,7 +135,7 @@ public class GrammarListenerImpl extends GrammarBaseListener {
             alternatives.add(new ParserRule.Alternative(applications, labels, code));
         }
 
-        ParserRule rule = new ParserRule(left, alternatives);
+        ParserRule rule = new ParserRule(ruleName, alternatives);
         // add attributes
         Set<String> params = new HashSet<>();
         TerminalNode args = ctx.ARGS();

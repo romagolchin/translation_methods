@@ -1,0 +1,4 @@
+skip WS : '[ \t\n]+';
+
+s returns [int d]: { $d = 0; System.out.println("depth " + $d);   }
+| '\(' l=s '\)' r=s { $d = Math.max($l.d + 1, $r.d); System.out.println("depth " + $d); }  ;

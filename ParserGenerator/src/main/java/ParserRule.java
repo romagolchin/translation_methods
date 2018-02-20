@@ -1,5 +1,6 @@
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -99,5 +100,21 @@ public class ParserRule {
                 ", params=" + params +
                 ", returnValues=" + returnValues +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ParserRule rule = (ParserRule) o;
+        return Objects.equals(lhs, rule.lhs) &&
+                Objects.equals(alternatives, rule.alternatives) &&
+                Objects.equals(params, rule.params) &&
+                Objects.equals(returnValues, rule.returnValues);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(lhs, alternatives, params, returnValues);
     }
 }

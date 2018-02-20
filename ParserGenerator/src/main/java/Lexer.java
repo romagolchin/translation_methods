@@ -40,8 +40,8 @@ public class Lexer {
         public Coord coord = new Coord(0, 0);
 
         public Token(String text, int id) {
-            this.text = text;
             this.id = id;
+            this.text = id == -1 ? "END" : text;
             try {
                 integer = Integer.valueOf(text);
             } catch (NumberFormatException e) {

@@ -1,6 +1,9 @@
+import arithm.ArithmParser;
+import empty.EmptyParser;
+import regex.RegexParser;
+import rps.RpsParser;
 
-//import grammarArithm.GrammarArithmParser;
-
+import java.nio.file.Path;
 import java.nio.file.Paths;
 
 /**
@@ -11,10 +14,12 @@ public class Main {
     public static void main(String[] args) throws Exception {
         if (args.length < 1)
             throw new IllegalArgumentException("expected path to test as command-line argument");
-//        GrammarArithmParser parser = new GrammarArithmParser(Paths.get(args[0]));
-//        GrammarArithmParser.E e = parser.new E();
-//        CorrectGrammarRPSParser parser = new CorrectGrammarRPSParser(Paths.get(args[0]));
-//        CorrectGrammarRPSParser.S s = parser.new S();
 
+        Path file = Paths.get(args[0]);
+//        new ArithmParser(Paths.get(args[0])).new E();
+        new RegexParser(file).new E();
+
+//        new RpsParser(Paths.get(args[0])).new S();
+//        new EmptyParser(Paths.get(args[0]));
     }
 }

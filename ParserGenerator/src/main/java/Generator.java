@@ -37,8 +37,6 @@ public class Generator {
 
     private static final String JAVA = ".java";
 
-    private static final String LEXER = "Lexer";
-
     private static final String PARSER = "Parser";
 
     private static final String INDENT = "    ";
@@ -52,10 +50,9 @@ public class Generator {
 
         grammarName = grammarPath.getFileName().toString();
 
-//        lexerName = capitalize(grammarName + LEXER);
         lexerName = "Lexer";
 
-        parserName = capitalize(grammarName + PARSER);
+        parserName = Util.capitalize(grammarName + PARSER);
 
         GrammarLexer lexer = new GrammarLexer(CharStreams.fromPath(grammarPath));
 
@@ -76,11 +73,6 @@ public class Generator {
         for (int i = 0; i < grammar.lexerRules.size(); i++) {
             System.out.println(i + " " + grammar.lexerRules.get(i).regex);
         }
-    }
-
-    private static String capitalize(@NotNull String s) {
-        if (s.isEmpty()) return s;
-        return String.valueOf(Character.toUpperCase(s.charAt(0))) + (s.length() > 1 ? s.substring(1) : "");
     }
 
     private void print(String s, boolean noIndent) {
@@ -164,13 +156,13 @@ public class Generator {
 
     }
 
-    private String rewriteCode(String code, int alternativeIndex, String lhs) {
+    private String rewriteCode(String code, int alternativeIndex) {
         Matcher matcher = Pattern.compile("\\$([a-z][a-z\\d]*)\\.").matcher(code);
-        String firstModification = matcher.replaceAll("$1.label" + alternativeIndex + ".attrs.");
+        String firstModification = matcher.replaceAll("this.labels" + alternativeIndex + ".$1" + ".attrs.");
         matcher = Pattern.compile("\\$([a-z][a-z\\d]*)([^.])").matcher(firstModification);
-        String secondModification = matcher.replaceAll("this.$1");
+        String secondModification = matcher.replaceAll("this.attrs.$1$2");
         return Pattern.compile("\\$([A-Z][A-Z\\d]*)\\.").matcher(secondModification)
-                .replaceAll("tokens.$1.");
+                .replaceAll("tokens" + alternativeIndex + ".$1.");
     }
 
     private void genParser() throws IOException {
@@ -206,7 +198,7 @@ public class Generator {
 
             grammar.parserRules.forEach(parserRule -> {
                 String lhs = parserRule.getLhs();
-                String capLhs = capitalize(lhs);
+                String capLhs = Util.capitalize(lhs);
                 StringJoiner paramList = new StringJoiner(", ", "(", ")");
 
                 printBody("public class " + capLhs, () -> {
@@ -231,7 +223,7 @@ public class Generator {
                             if (application.isToken())
                                 curTokenFields.add("Token " + label + ";");
                             else
-                                curLabelFields.add(capitalize(application.elem) + " " + label + ';');
+                                curLabelFields.add(Util.capitalize(application.elem) + " " + label + ';');
                         });
                     }
                     for (int i = 0; i < alternatives.size(); i++) {
@@ -248,7 +240,7 @@ public class Generator {
                         parserRule.params.forEach(p -> {
                                     String[] splitParam = p.split(" ");
                                     String name = splitParam[splitParam.length - 1];
-                                    println(lhs + ".attrs." + name + " = " + name + ";");
+                                    println("this.attrs." + name + " = " + name + ";");
                                 }
                         );
                         println("Token token = lexer.getToken();");
@@ -262,18 +254,18 @@ public class Generator {
                                 printBody("", () -> {
                                     alternative.getRhs().forEach(application -> {
                                         if (!application.isToken()) {
-                                            String capitalizeElem = capitalize(application.elem);
-                                            println(capitalizeElem + " " + application.label + " = new " + capitalizeElem
-                                                    + "(" + rewriteCode(application.args, altIndex, lhs) + ");");
+                                            String capitalizeElem = Util.capitalize(application.elem);
+                                            println("this.labels" + altIndex + "." + application.label + " = new " + capitalizeElem
+                                                    + "(" + rewriteCode(application.args, altIndex) + ");");
                                         } else {
                                             if (application.label != null)
-                                                println("Token " + lhs + ".tokens" + altIndex + "." +
+                                                println("this.tokens" + altIndex + "." +
                                                         application.label + " = lexer.getToken();");
                                             println("lexer.next();");
                                         }
                                     });
                                     String code = alternative.getCode();
-                                    println(rewriteCode(code, altIndex, lhs));
+                                    println(rewriteCode(code, altIndex));
                                     println("break;");
                                 });
                             });
@@ -293,7 +285,6 @@ public class Generator {
                         println(tokensClassName + " " + tokensClassName.toLowerCase() + " = new " + tokensClassName +
                                 "();");
                     }
-                    println(capLhs + " " + lhs + " = this;");
                 });
             });
             printBody("public " + parserName + "(Path file) throws IOException", () -> {

@@ -1,0 +1,12 @@
+e:a e1;
+e1: '\|' a e1 | ;
+a: and a1;
+a1:
+| '&' and a1;
+and:c and1;
+and1:
+	| c and1;
+c:'[a-z]' c1
+	| '\(' e '\)' c1;
+c1: '\*' c1
+	| ;

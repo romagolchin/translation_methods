@@ -46,8 +46,8 @@ public class FirstFollowBuilder {
         if (rightPart.isEmpty())
             tokens.add(Util.Constants.EPS);
         for (ParserRule.Application a : rightPart) {
-            String s = a.elem;
-            if (s != null && s.isEmpty())
+            String elem = a.elem;
+            if (elem != null && elem.isEmpty())
                 tokens.add(Util.Constants.EPS);
             if (a.isToken()) {
                 Integer token = a.tokenId;
@@ -55,11 +55,15 @@ public class FirstFollowBuilder {
                 break;
             } else {
                 // non-terminal
-                if (s != null && !s.isEmpty()) {
-                    Set<Integer> nonTerminalFirst = first.get(s);
-                    tokens.addAll(nonTerminalFirst);
-                    if (!nonTerminalFirst.contains(Util.Constants.EPS))
-                        break;
+                if (elem != null && !elem.isEmpty()) {
+                    Set<Integer> nonTerminalFirst = first.get(elem);
+                    if (nonTerminalFirst == null)
+                        throw new AssertionError("no such non-terminal " + elem);
+                    else {
+                        tokens.addAll(nonTerminalFirst);
+                        if (!nonTerminalFirst.contains(Util.Constants.EPS))
+                            break;
+                    }
                 } else {
                     tokens.add(Util.Constants.EPS);
                 }
@@ -119,14 +123,12 @@ public class FirstFollowBuilder {
 
         for (ParserRule rule : parserRules) {
             String lhs = rule.getLhs();
-//            List<Set<Integer>> firstsOfAlternatives = new ArrayList<>();
             Set<Integer> curFollow = follow.get(lhs);
             lhsToTokenToAlt.put(lhs, new HashMap<>());
             List<ParserRule.Alternative> alternatives = rule.getAlternatives();
             for (int altNo = 0; altNo < alternatives.size(); altNo++) {
                 ParserRule.Alternative alternative = alternatives.get(altNo);
                 Set<Integer> firstTokens = computeFirst(alternative.getRhs());
-//                firstsOfAlternatives.add(firstTokens);
                 if (firstTokens.contains(Util.Constants.EPS)) {
                     firstTokens.addAll(curFollow);
                 }
@@ -136,8 +138,8 @@ public class FirstFollowBuilder {
                     Map<Integer, Integer> tokenToAlt = lhsToTokenToAlt.get(lhs);
                     Integer oldAlt = tokenToAlt.get(token);
                     if (oldAlt != null) {
-                        throw new RuntimeException("Grammar is not LL(1): token "
-                                + grammar.lexerRules.get(token).regex + " leads to alternatives " +
+                        throw new RuntimeException("Grammar is not LL(1): token '"
+                                + grammar.lexerRules.get(token).regex + "' leads to alternatives " +
                                 (oldAlt + 1) + " and " + (finalAltNo + 1) + " in rule " + lhs);
                     }
                     tokenToAlt.put(token, finalAltNo);
